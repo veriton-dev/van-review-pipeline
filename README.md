@@ -68,6 +68,59 @@ await handler({workDir}); // one call per poll; safe to call repeatedly
 The handler is idempotent: re-running it never rewrites an existing
 `sources.json` or `decision.json`.
 
+## Running it against the real test API
+
+Two small processes live beside the handler. Both read the token and instance id
+from a private state directory (`VAN_STATE_DIR`, default
+`~/.openclaw/workspace/scratch/van-pilot-work-20261119/state`) and print only
+ids, status codes and booleans — never the token, a dispatch token or report text.
+
+```bash
+npm test                       # 26 offline tests, no network
+node readiness-probe.mjs       # /agents/me, 2x instance heartbeat, reviewer
+                               # heartbeat, one /reviews/next poll
+node review-loop.mjs --dry-run # prints the plan, no network
+node review-loop.mjs --ready-seconds 120   # advertise availability and poll
+node review-loop.mjs --once                # one poll, claim one job if offered
+```
+
+`review-loop.mjs` is the process, not a library: the connector state machine owns
+heartbeats/polling/claim/receipt while a 1.5s supervisor calls the file handler
+for whatever dispatch is active. One process per state directory — the connector
+refuses a second lock rather than racing.
+
+### What was observed on 2026-11-21 (test API, admission paused)
+
+`node readiness-probe.mjs` → `allOk: true`
+
+| step | result |
+| --- | --- |
+| `GET /agents/me` | 200, `role: reviewer` |
+| `POST /agents/instances/heartbeat` (twice, 5s apart) | 200, same instanceId, `readyUntil` advancing |
+| `POST /reviews/heartbeat` | 200 `{"status":"ok"}` |
+| `POST /reviews/next` | 200 `{"dispatch":null}` |
+
+A 120-second ready window (`node review-loop.mjs --ready-seconds 120`) then ran
+both heartbeats every 30s with idle polling and exited cleanly at
+`{"phase":"idle","receiptSubmitted":false}`. No dispatch existed, so no attempt
+was consumed and no receipt was fabricated. This is readiness evidence, not a
+completed review; a live verdict still requires an admitted order.
+
+### `minRewardAtomic` must be a decimal string
+
+`POST /agents/instances/heartbeat` rejects the natural JSON number with a generic
+error:
+
+```json
+{"instanceId":"…","slots":1,"minRewardAtomic":"17000"}   // 200
+{"instanceId":"…","slots":1,"minRewardAtomic":17000}     // 400 invalid_instance_heartbeat
+```
+
+Both this repo and the connector treat it as a string, and the guide writes the
+placeholder quoted, but the error text names no field, so an integrator sending a
+number sees only "invalid". Worth a `field`/`expected` hint server-side.
+
+
 ## Tests
 
 `npm test` runs offline. It covers source planning edge cases (punctuation,
@@ -103,8 +156,10 @@ a reviewer that only ever abstains is worthless.
   (unparseable output, invented ID, quote not present, call failure, oversized
   prompt) resolves to UNVERIFIED rather than a verdict. Genuine misjudgment of
   well-grounded text is not something a parser can catch.
-- **Not tested against the live VAN server.** Admission was paused when this was
-  written. Everything here is offline tests plus a real-HTTP smoke test.
+- **No live review receipt yet.** The API integration was exercised for real
+  (identity, both heartbeats, queue polling, clean shutdown), but admission is
+  paused, so no order was ever dispatched to this reviewer. Judgment quality is
+  demonstrated by the offline lifecycle test and the real-HTTP smoke test only.
 
 ## License
 
