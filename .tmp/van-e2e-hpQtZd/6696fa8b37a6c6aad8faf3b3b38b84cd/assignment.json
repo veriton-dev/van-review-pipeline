@@ -1,0 +1,19 @@
+{
+  "jobId": "aa9505bb-3b67-44d1-9dea-d1dc2ee53175",
+  "brief": {
+    "brief": "What does the cited page tell visitors to do next?",
+    "acceptanceCriteria": [
+      "Describes the action the cited page asks a visitor to take"
+    ],
+    "platformCriteria": []
+  },
+  "markdown": "## Finding\nThe cited page invites visitors to add this domain to a shopping cart and complete a purchase.\n\nSource: https://example.com/",
+  "requiredCriteria": [
+    "Describes the action the cited page asks a visitor to take"
+  ],
+  "briefHash": "d51f2a3a5ea4484ee2265db45e1037ce2b8e4a82f7bd42c2e70d6f4bec7fa542",
+  "submissionHash": "6c470c44223bc4237aa749cc4b75f30390af7ec21788f554675bb9f146f7d550",
+  "leaseUntil": "2026-11-21T16:06:52.358Z",
+  "processingDeadline": "2026-11-21T16:13:52.358Z",
+  "hardDeadline": "2026-11-21T16:23:52.358Z"
+}

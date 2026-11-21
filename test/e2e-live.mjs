@@ -10,7 +10,7 @@
 //   node test/e2e-live.mjs
 //
 // No VAN server, no credential, no payment, no dispatch attempt consumed.
-import {mkdtemp, rm, chmod, mkdir, readFile} from 'node:fs/promises';
+import {mkdtemp, rm, chmod, mkdir, readFile, realpath} from 'node:fs/promises';
 import {join} from 'node:path';
 import {createHash, randomUUID} from 'node:crypto';
 import {execFile as execFileCb} from 'node:child_process';
@@ -81,7 +81,11 @@ async function runOnce({label, markdown, brief, expected, excerpt}) {
     },
   };
 
-  const dir = await mkdtemp(process.env.TMPDIR ? join(process.env.TMPDIR, 'van-e2e-') : join('/home/agent/.cache/agentbox/runtime-tmp', 'van-e2e-'));
+  const scratch = process.env.TMPDIR ?? '/home/agent/.cache/agentbox/runtime-tmp';
+  await mkdir(scratch, {recursive: true});
+  // The connector rejects a state dir reached through a symlink, so resolve the
+  // real path before handing it over.
+  const dir = await realpath(await mkdtemp(join(scratch, 'van-e2e-')));
   await chmod(dir, 0o700);
   const store = new Store(dir);
   await store.init();
@@ -96,7 +100,7 @@ async function runOnce({label, markdown, brief, expected, excerpt}) {
       const active = await store.read('active.json');
       if (!active?.assignment || active.receipt || active.phase === 'completed') return;
       const workDir = `${store.root}/${sha(active.dispatch.dispatchToken).slice(0, 32)}`;
-      await mkdir(workDir, {recursive: true});
+      await mkdir(workDir, {recursive: true, mode: 0o700});
       await handler({workDir});
     } catch {
       // Assertions below are the failure surface.
@@ -156,5 +160,22 @@ const contradicted = await runOnce({
   excerpt,
 });
 
-console.log(supported && contradicted ? 'RESULT: PASS' : 'RESULT: FAIL');
-process.exitCode = supported && contradicted ? 0 : 1;
+
+// Third scenario: the honest-abstention path with the real model. The claim is
+// only settleable by text OUTSIDE the 4000-char window the server returns, so a
+// reviewer that cannot see it must not ACCEPT and must not invent a quote.
+const LONG_URL = 'https://www.iana.org/help/example-domains';
+const longSource = await fetchExcerpt(LONG_URL);
+console.log(`source ${LONG_URL} -> HTTP ${longSource.status}, body ${longSource.bytes} chars, excerpt ${longSource.excerpt.length} chars`);
+const unseen = await runOnce({
+  label: 'fact outside the excerpt window',
+  brief: {brief: 'Which exact section of the IANA site documents the .example TLD delegation process?', acceptanceCriteria: ['Names the exact section documenting .example delegation'], platformCriteria: []},
+  markdown: `## Finding
+The IANA help pages state in their final footer note that .example delegations are handled by the "Example Registry Operations" section.\n\nSource: ${LONG_URL}`,
+  expected: 'INCONCLUSIVE',
+  excerpt: longSource.excerpt,
+});
+
+console.log(supported && contradicted && unseen ? 'RESULT: PASS' : 'RESULT: FAIL');
+
+process.exitCode = supported && contradicted && unseen ? 0 : 1;

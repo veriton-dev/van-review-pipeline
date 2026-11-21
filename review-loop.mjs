@@ -14,7 +14,7 @@
 // - never prints the token, a dispatch token, or a receipt body
 // - one process only: the connector refuses a second lock on the same state dir
 // - an expired/lost lease is reported and the process stops rather than guessing
-import {readFile} from 'node:fs/promises';
+import {readFile, mkdir} from 'node:fs/promises';
 import {existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {execFile as execFileCb} from 'node:child_process';
@@ -87,6 +87,9 @@ async function runHandlerForActive() {
   const {createHash} = await import('node:crypto');
   const handoff = createHash('sha256').update(active.dispatch.dispatchToken).digest('hex').slice(0, 32);
   const workDir = join(STATE, handoff);
+  // The handler writes its control files 0600; the connector reads them from
+  // this directory, so create it private rather than inheriting the umask.
+  await mkdir(workDir, {recursive: true, mode: 0o700});
   await handler({workDir});
 }
 

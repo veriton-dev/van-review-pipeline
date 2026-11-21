@@ -149,13 +149,20 @@ Observed 2026-11-21 on `https://example.com/` (577-byte body, fully inside the
 4000-char excerpt window):
 
 ```
-supported claim   -> ACCEPT  PASS  quote "<title>Example Domain</title>"
-contradicted claim -> REVISE  FAIL  quote "…This is not a service; avoid relying on it…"
+supported claim              -> ACCEPT        PASS        quote "<title>Example Domain</title>"
+contradicted claim           -> REVISE        FAIL        quote "…This is not a service; avoid relying on it…"
+fact outside the 4000-char window -> INCONCLUSIVE  UNVERIFIED  quote null
 ```
 
-Both receipts had one grounded check, one posted receipt each, and the source was
-fetched through the connector's own `/evidence` call — so a verdict here cannot
-come from a handler that skipped the evidence stage.
+The third case is the one that matters for honesty. It cites
+`https://www.iana.org/help/example-domains` (6,772 bytes served, 4,000 retained)
+and asserts a fact that appears nowhere in either the excerpt or the page; the
+model must abstain rather than invent a quote. It does, and the receipt carries
+`quote: null` with `UNVERIFIED`, so the verdict can only be INCONCLUSIVE.
+
+Each run posted exactly one receipt with one check, and the source was fetched
+through the connector's own `/evidence` call — so none of these verdicts can come
+from a handler that skipped the evidence stage.
 
 
 ## Known limits, stated plainly

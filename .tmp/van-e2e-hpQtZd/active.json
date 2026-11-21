@@ -1,0 +1,62 @@
+{
+  "dispatch": {
+    "jobId": "aa9505bb-3b67-44d1-9dea-d1dc2ee53175",
+    "dispatchToken": "16478cf6-aef3-403a-a439-eabeeb5173f3",
+    "attempt": 1,
+    "timingVersion": 2
+  },
+  "phase": "claimed",
+  "assignment": {
+    "jobId": "aa9505bb-3b67-44d1-9dea-d1dc2ee53175",
+    "timingVersion": 2,
+    "brief": {
+      "brief": "What does the cited page tell visitors to do next?",
+      "acceptanceCriteria": [
+        "Describes the action the cited page asks a visitor to take"
+      ],
+      "platformCriteria": []
+    },
+    "markdown": "## Finding\nThe cited page invites visitors to add this domain to a shopping cart and complete a purchase.\n\nSource: https://example.com/",
+    "briefHash": "d51f2a3a5ea4484ee2265db45e1037ce2b8e4a82f7bd42c2e70d6f4bec7fa542",
+    "submissionHash": "6c470c44223bc4237aa749cc4b75f30390af7ec21788f554675bb9f146f7d550",
+    "requiredCriteria": [
+      "Describes the action the cited page asks a visitor to take"
+    ],
+    "leaseUntil": "2026-11-21T16:06:52.358Z",
+    "processingDeadline": "2026-11-21T16:13:52.358Z",
+    "hardDeadline": "2026-11-21T16:23:52.358Z"
+  },
+  "sources": {
+    "urls": [
+      "https://example.com/"
+    ],
+    "citationCheck": false
+  },
+  "evidence": [
+    {
+      "url": "https://example.com/",
+      "status": 200,
+      "body": {
+        "id": "a09d15c3-d841-4731-b77e-20794a7fa2d2",
+        "attemptId": "7b55955d-9a04-448c-a009-baa891725716",
+        "sourceUrl": "https://example.com/",
+        "excerpt": "<!doctype html><html lang=en><head><meta charset=utf-8><link rel=icon href=data:,><meta name=viewport content=\"width=device-width,initial-scale=1\"><title>Example Domain</title><style>html{color-scheme:light dark;background:light-dark(#eee,#222)}body{font:16px/1.6 system-ui,sans-serif;max-width:26em;margin:auto;padding:25vh 2em 2em;text-align:center}</style></head><body><p>This domain is for use in documentation examples without needing permission. This is not a service; avoid relying on it for testing and monitoring purposes.</p><script src=/s.js></script></body></html>\n",
+        "bodyHash": "25ddf2c883e0d1958ea971d279a7e4f0fd446724ee3db7db19dadabd4a62e484",
+        "fetchedAt": "2026-11-21T16:03:52.401Z"
+      },
+      "context": {
+        "jobId": "aa9505bb-3b67-44d1-9dea-d1dc2ee53175",
+        "dispatchToken": "16478cf6-aef3-403a-a439-eabeeb5173f3",
+        "briefHash": "d51f2a3a5ea4484ee2265db45e1037ce2b8e4a82f7bd42c2e70d6f4bec7fa542",
+        "submissionHash": "6c470c44223bc4237aa749cc4b75f30390af7ec21788f554675bb9f146f7d550"
+      }
+    }
+  ],
+  "evidenceContext": {
+    "jobId": "aa9505bb-3b67-44d1-9dea-d1dc2ee53175",
+    "dispatchToken": "16478cf6-aef3-403a-a439-eabeeb5173f3",
+    "briefHash": "d51f2a3a5ea4484ee2265db45e1037ce2b8e4a82f7bd42c2e70d6f4bec7fa542",
+    "submissionHash": "6c470c44223bc4237aa749cc4b75f30390af7ec21788f554675bb9f146f7d550"
+  },
+  "evidenceDone": true
+}
