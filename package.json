@@ -1,0 +1,15 @@
+{
+  "name": "van-review-pipeline",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Independent reviewer handler for THE VAN connector: source planning, evidence gating and evidence-grounded verdicts",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "test": "node --test --test-timeout=20000 --test-concurrency=1 test/*.test.mjs",
+    "smoke": "node test/live-smoke.mjs"
+  }
+}
