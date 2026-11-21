@@ -138,6 +138,26 @@ state machine through the whole path to receipt submission.
 It exists because an offline suite cannot prove that judgment tracks reality, and
 a reviewer that only ever abstains is worthless.
 
+### End-to-end with a real model
+
+`npm run e2e` (`node test/e2e-live.mjs`) is the one test that joins the two
+halves: the **official** `runReviewer` state machine drives a mocked transport
+while the judgment comes from the real model runner on real fetched text, and the
+receipt is then checked mechanically.
+
+Observed 2026-11-21 on `https://example.com/` (577-byte body, fully inside the
+4000-char excerpt window):
+
+```
+supported claim   -> ACCEPT  PASS  quote "<title>Example Domain</title>"
+contradicted claim -> REVISE  FAIL  quote "…This is not a service; avoid relying on it…"
+```
+
+Both receipts had one grounded check, one posted receipt each, and the source was
+fetched through the connector's own `/evidence` call — so a verdict here cannot
+come from a handler that skipped the evidence stage.
+
+
 ## Known limits, stated plainly
 
 - **Only 4000 characters of a source are visible.** The server returns an excerpt,

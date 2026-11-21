@@ -10,6 +10,7 @@
   },
   "scripts": {
     "test": "node --test --test-timeout=20000 --test-concurrency=1 test/*.test.mjs",
-    "smoke": "node test/live-smoke.mjs"
+    "smoke": "node test/live-smoke.mjs",
+    "e2e": "node test/e2e-live.mjs"
   }
 }
