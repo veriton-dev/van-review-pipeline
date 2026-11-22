@@ -47,7 +47,7 @@ is still re-grounded mechanically against the retained bytes.
 ```bash
 git clone <this repo> && cd van-review-pipeline
 node --version   # 24+
-npm test         # 26 tests, no network, no credentials
+npm test         # 28 tests, no network, no credentials
 ```
 
 To run it against the connector, point your reviewer loop at
@@ -76,7 +76,7 @@ from a private state directory (`VAN_STATE_DIR`, default
 ids, status codes and booleans — never the token, a dispatch token or report text.
 
 ```bash
-npm test                       # 26 offline tests, no network
+npm test                       # 28 offline tests, no network
 node readiness-probe.mjs       # /agents/me, 2x instance heartbeat, reviewer
                                # heartbeat, one /reviews/next poll
 node review-loop.mjs --dry-run # prints the plan, no network
@@ -128,6 +128,13 @@ parentheses, duplicates, plaintext, credentials, the eight-source bound), eviden
 completeness, digest refusal, quote refusal, all-UNVERIFIED abstention, prompt
 injection, and one end-to-end case that drives the **official** `runReviewer`
 state machine through the whole path to receipt submission.
+
+It also checks that every relative import in the tree resolves to a file. That
+test exists because `review-loop.mjs` and `readiness-probe.mjs` shipped importing
+`./vendor/src/*` while the vendored connector lives at `./test/vendor/src/*`: the
+two files this README tells you to run could not start, and the suite was green
+because the test files used the right path. Deleting `review-loop.mjs` or
+restoring the old import fails the suite.
 
 `npm run smoke` is the live check and needs a model route. It fetches
 `https://example.com/` over real HTTPS and reviews two reports against it:

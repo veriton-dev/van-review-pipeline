@@ -5,7 +5,7 @@
 // never submits a receipt, so it cannot burn a dispatch attempt's review lease.
 // Prints only non-sensitive fields (ids, status codes, booleans).
 import {readFile} from 'node:fs/promises';
-import {VanClient, ApiError} from './vendor/src/api.mjs';
+import {VanClient, ApiError} from './test/vendor/src/api.mjs';
 
 const STATE = process.env.VAN_STATE_DIR
   ?? '/home/agent/.openclaw/workspace/scratch/van-pilot-work-20261119/state';

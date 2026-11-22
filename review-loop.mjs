@@ -19,9 +19,9 @@ import {existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {execFile as execFileCb} from 'node:child_process';
 import {promisify} from 'node:util';
-import {VanClient} from './vendor/src/api.mjs';
-import {runReviewer} from './vendor/src/reviewer.mjs';
-import {Store} from './vendor/src/store.mjs';
+import {VanClient} from './test/vendor/src/api.mjs';
+import {runReviewer} from './test/vendor/src/reviewer.mjs';
+import {Store} from './test/vendor/src/store.mjs';
 import {makePipelineHandler} from './handler.mjs';
 import {makeJudge, makeCliRunner} from './judge.mjs';
 
