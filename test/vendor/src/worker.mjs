@@ -1,3 +1,4 @@
+import {ENVIRONMENT,STATE_CONTEXT,requireStateContext} from './network.mjs';
 import {createHash} from 'node:crypto';
 import {setTimeout as sleep} from 'node:timers/promises';
 import {uuid} from './reviewer.mjs';
@@ -14,11 +15,12 @@ export async function runWorker(client,store,identity,jobId,{revision=false,sign
  const instance=()=>client.request('/agents/instances/heartbeat',{instanceId:identity.instanceId,slots:1,minRewardAtomic:identity.minRewardAtomic});
  try{
   active=await store.read('worker-active.json');
+  if(active)requireStateContext(active);
   if(active&&active.phase!=='submitted'&&active.jobId!==jobId)throw Error('Another worker job requires reconciliation');
   if(!active||active.phase==='submitted'&&(revision||active.jobId!==jobId)){
    const listing=await client.request('/public/jobs/'+jobId,undefined,{auth:false});
    if(listing.publicId!==jobId||listing.currency!=='USDC'||listing.timingVersion!==2||listing.jobType!=='research_report'||typeof listing.rewardAtomic!=='string'||!/^\d{1,13}$/.test(listing.rewardAtomic)||BigInt(listing.rewardAtomic)<BigInt(identity.minRewardAtomic)||!revision&&listing.status!=='open')throw Error('Job type, status or worker reward floor mismatch');
-   active={jobId,phase:'claim_pending',revision};await store.write('worker-active.json',active);
+   active={...(ENVIRONMENT==='mainnet'?{deployment:STATE_CONTEXT}:{}),jobId,phase:'claim_pending',revision};await store.write('worker-active.json',active);
    await instance();
    // Freeze claim intent first. A lost reply is recovered read-only, never with
    // another claim that might allocate a fresh lease.

@@ -1,3 +1,4 @@
+import {NETWORK,ENVIRONMENT} from './network.mjs';
 import {canonical} from './canonical.mjs';
 const uuid = value => typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value);
 const digest = value => typeof value === 'string' && /^[a-f0-9]{64}$/i.test(value);
@@ -11,7 +12,7 @@ export function criteriaFor(brief) {
   return [...new Set([...brief.acceptanceCriteria, ...platform])];
 }
 export function proofContext(assignment, dispatch) {
-  return {jobId: dispatch.jobId, dispatchToken: dispatch.dispatchToken,
+  return {...(ENVIRONMENT==='mainnet'?{deployment:{environmentId:'mainnet',profileId:NETWORK.profileId,chainId:NETWORK.chainId,asset:NETWORK.asset,audience:NETWORK.audience}}:{}),jobId: dispatch.jobId, dispatchToken: dispatch.dispatchToken,
     briefHash: assignment.briefHash, submissionHash: assignment.submissionHash};
 }
 function sameContext(value, expected) {

@@ -1,3 +1,4 @@
+import {ENVIRONMENT,STATE_CONTEXT,requireStateContext} from './network.mjs';
 import {createHash} from 'node:crypto';
 import {setTimeout as sleep} from 'node:timers/promises';
 import {ApiError} from './api.mjs';
@@ -23,11 +24,12 @@ export async function runReviewer(client,store,identity,{signal,once=false,inter
  const release=await store.lock();let busy=false,lost=false,active=await store.read('active.json'),timer;
  const pulse=async()=>{if(busy||signal?.aborted)return;busy=true;try{if(active?.assignment&&!active.receipt){const t=await client.request('/jobs/'+active.dispatch.jobId+'/review/heartbeat',{dispatchToken:active.dispatch.dispatchToken});deadlines(t);active.assignment={...active.assignment,...t};}await availability(client,identity);}catch{lost=true;}finally{busy=false;}};
  try{
+  if(active)requireStateContext(active);
   if(active?.phase==='completed')active=null;
   if(!active){await availability(client,identity);const {dispatch}=await client.request('/reviews/next',{instanceId:identity.instanceId});if(!dispatch){log('queue_empty');if(once)return;}
-   else{validateDispatch(dispatch);active={dispatch,phase:'offered'};await store.write('active.json',active);}}
+   else{validateDispatch(dispatch);active={...(ENVIRONMENT==='mainnet'?{deployment:STATE_CONTEXT}:{}),dispatch,phase:'offered'};await store.write('active.json',active);}}
   while(!signal?.aborted){
-   if(!active){await sleep(5000,undefined,{signal}).catch(()=>{});if(signal?.aborted)break;await availability(client,identity);const {dispatch}=await client.request('/reviews/next',{instanceId:identity.instanceId});if(!dispatch)continue;active={dispatch:validateDispatch(dispatch),phase:'offered'};await store.write('active.json',active);}
+   if(!active){await sleep(5000,undefined,{signal}).catch(()=>{});if(signal?.aborted)break;await availability(client,identity);const {dispatch}=await client.request('/reviews/next',{instanceId:identity.instanceId});if(!dispatch)continue;active={...(ENVIRONMENT==='mainnet'?{deployment:STATE_CONTEXT}:{}),dispatch:validateDispatch(dispatch),phase:'offered'};await store.write('active.json',active);}
    const base='/jobs/'+active.dispatch.jobId+'/review';
    // Always replay the same persisted receipt first, even after a lost reply.
    if(active.receipt){const r=await client.request(base,active.receipt);active.phase='completed';active.result=r;await store.write('receipt-'+active.dispatch.jobId+'-'+active.dispatch.attempt+'.json',active);await store.write('active.json',active);log('receipt_acknowledged');if(once)return;active=null;continue;}
