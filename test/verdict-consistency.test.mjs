@@ -10,7 +10,7 @@ import {mkdtemp, chmod, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {createHash, randomUUID} from 'node:crypto';
-import {deriveVerdict} from '../verdict.mjs';
+import {deriveVerdict, reviseOnFailureFromBrief} from '../verdict.mjs';
 import {receiptFor} from './vendor/src/reviewer.mjs';
 import {canonical} from './vendor/src/canonical.mjs';
 import {criteriaFor, proofContext} from './vendor/src/review-proof.mjs';
@@ -113,9 +113,9 @@ test('a mixed FAIL and UNVERIFIED resolves to INCONCLUSIVE, which the validator 
       assignment, dispatch, evidence));
 });
 
-test('this reviewer never derives REJECT', () => {
-  // REJECT removes the counterparty's revision option; REVISE carries the same
-  // FAIL evidence, so automatic derivation must not produce REJECT.
+test('the default policy never derives REJECT', () => {
+  // REJECT removes the counterparty's revision option and REVISE carries the
+  // same FAIL evidence, so REJECT must be chosen explicitly, never by default.
   for (const first of verdicts) {
     for (const second of verdicts) {
       const {evidenceId} = fixture();
@@ -124,6 +124,7 @@ test('this reviewer never derives REJECT', () => {
         {...check(second, evidenceId), criterion: 'b'},
       ];
       assert.notEqual(deriveVerdict(checks), 'REJECT');
+      assert.notEqual(deriveVerdict(checks, {policy: 'revise'}), 'REJECT');
     }
   }
 });
@@ -156,4 +157,41 @@ test('a quote that is not in the retained excerpt is refused by the validator', 
   assert.throws(() =>
     receiptFor({verdict: 'ACCEPT', reason: 'Grounded.', checks: [fabricated]}, assignment, dispatch, evidence),
     /Exact quote not present|Evidence request context/i);
+});
+
+test('a venue rubric that demands REJECT produces REJECT, which the validator accepts', async () => {
+  const {assignment, dispatch, evidence, evidenceId} = fixture();
+  const checks = [check('FAIL', evidenceId)];
+  const verdict = deriveVerdict(checks, {policy: 'reject'});
+  assert.equal(verdict, 'REJECT');
+  assert.doesNotThrow(() =>
+    receiptFor({verdict, reason: 'The report contradicts its own cited source.', checks},
+      assignment, dispatch, evidence));
+});
+
+test('a rubric stated in the frozen brief flips the default, and nothing else does', () => {
+  const base = {brief: 'Identify the chain ID', acceptanceCriteria: ['State the chain ID']};
+  assert.equal(reviseOnFailureFromBrief(base), true);
+  assert.equal(reviseOnFailureFromBrief({...base, acceptanceCriteria: [
+    'State the chain ID', 'A report with the wrong chain ID requires REJECT rather than REVISE',
+  ]}), false);
+  // Mentions that do not instruct a rejection must not swing the verdict.
+  assert.equal(reviseOnFailureFromBrief({...base, brief: 'Do not reject the report without evidence'}), true);
+  assert.equal(reviseOnFailureFromBrief(null), true);
+  assert.equal(reviseOnFailureFromBrief({acceptanceCriteria: ['x', 42]}), true);
+});
+
+test('no brief text can turn an UNVERIFIED check into ACCEPT or REJECT', () => {
+  const {evidenceId} = fixture();
+  for (const policy of ['auto', 'revise', 'reject']) {
+    for (const reviseOnFailure of [true, false]) {
+      assert.equal(deriveVerdict([check('UNVERIFIED', evidenceId)], {policy, reviseOnFailure}), 'INCONCLUSIVE');
+    }
+  }
+});
+
+test('an unknown policy is refused rather than silently defaulting', () => {
+  const {evidenceId} = fixture();
+  assert.throws(() => deriveVerdict([check('PASS', evidenceId)], {policy: 'lenient'}), /unknown verdict policy/);
+  assert.throws(() => deriveVerdict([check('PASS', evidenceId)], {reviseOnFailure: 'yes'}), /must be boolean/);
 });

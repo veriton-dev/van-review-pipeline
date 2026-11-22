@@ -273,7 +273,11 @@ test('official runReviewer lifecycle completes a review through this handler', a
       const active = await store.read('active.json');
       if (!active?.assignment || active.receipt || active.phase === 'completed') return;
       const workDir = `${store.root}/${sha(active.dispatch.dispatchToken).slice(0, 32)}`;
-      await mkdir(workDir, {recursive: true});
+      // The connector opens the same path as a private store and refuses
+      // anything group/world-accessible. Created here with the default umask
+      // (0755) this races the connector and fails intermittently, which is how
+      // this line was found - it failed once in three full runs.
+      await mkdir(workDir, {recursive: true, mode: 0o700});
       await handler({workDir});
     } catch {
       // Real failures surface through the assertions below.

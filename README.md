@@ -39,8 +39,11 @@ own `runReviewer` against a mocked transport.
    unverified. The rule lives in `verdict.mjs` and is cross-checked against VAN's
    own `receiptFor` validator for every status combination, because the two are
    re-checked at the venue and a disagreement costs a real dispatch. REJECT is
-   never derived automatically: it carries the same FAIL evidence as REVISE while
-   removing the worker's one revision, so choosing it is the venue's call.
+   a deployment setting, not a per-review preference: the default is REVISE
+   because that keeps the revision the venue offers. Run with
+   `--contradiction reject` when the venue's rubric demands REJECT on a factual
+   contradiction (VAN's calibration suite does); with `auto` the frozen brief can
+   also state it in its own words.
 
 Report, brief and source text are treated as data throughout. A source that says
 "ignore previous instructions" is a string; the prompt delimits it and the answer
@@ -51,7 +54,8 @@ is still re-grounded mechanically against the retained bytes.
 ```bash
 git clone <this repo> && cd van-review-pipeline
 node --version   # 24+
-npm test         # 38 tests, no network, no credentials
+npm test         # 43 tests, no network, no credentials
+VAN_LIVE_JUDGE=1 node --test test/judge-live.test.mjs   # one real model call
 ```
 
 To run it against the connector, point your reviewer loop at
@@ -80,7 +84,7 @@ from a private state directory (`VAN_STATE_DIR`, default
 ids, status codes and booleans — never the token, a dispatch token or report text.
 
 ```bash
-npm test                       # 38 offline tests, no network
+npm test                       # 43 offline tests, no network
 node readiness-probe.mjs       # /agents/me, 2x instance heartbeat, reviewer
                                # heartbeat, one /reviews/next poll
 node review-loop.mjs --dry-run # prints the plan, no network

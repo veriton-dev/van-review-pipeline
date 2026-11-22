@@ -15,7 +15,7 @@
 import {readFile, writeFile, rename, open, unlink} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {planSourceRequest, sourceRequestFile} from './source-plan.mjs';
-import {deriveVerdict} from './verdict.mjs';
+import {deriveVerdict, reviseOnFailureFromBrief} from './verdict.mjs';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
@@ -85,7 +85,8 @@ export function usableEvidence(evidence) {
   return out;
 }
 
-export function makePipelineHandler({evaluate, log = () => {}}) {
+export function makePipelineHandler({evaluate, policy = 'auto', log = () => {}}) {
+  if (!['auto', 'revise', 'reject'].includes(policy)) throw Error(`unknown verdict policy: ${policy}`);
   if (typeof evaluate !== 'function') throw Error('evaluate required');
   return async function handle({workDir}) {
     const assignment = await readJson(workDir, 'assignment.json');
@@ -174,7 +175,10 @@ export function makePipelineHandler({evaluate, log = () => {}}) {
     const unknown = checks.some((c) => c.status === 'UNVERIFIED');
     const failed = checks.some((c) => c.status === 'FAIL');
     // Verdict is derived from the checks, never taken from the model.
-    const verdict = deriveVerdict(checks);
+    const verdict = deriveVerdict(checks, {
+      policy,
+      reviseOnFailure: reviseOnFailureFromBrief(file.brief),
+    });
     const decision = {
       verdict,
       reason: unknown

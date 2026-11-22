@@ -36,6 +36,15 @@ const flag = (name, fallback) => {
 const readySeconds = flag('--ready-seconds', 120);
 const once = args.has('--once');
 const dryRun = args.has('--dry-run');
+// Which verdict a contradicted report gets when the brief does not say. The
+// venue rubric for its calibration suite demands REJECT on a factual
+// contradiction, so that suite is run with `--contradiction reject`.
+const contradictionAt = process.argv.indexOf('--contradiction');
+const contradiction = contradictionAt === -1 ? 'auto' : process.argv[contradictionAt + 1];
+if (!['auto', 'revise', 'reject'].includes(contradiction)) {
+  console.error(JSON.stringify({error: 'invalid --contradiction policy'}));
+  process.exit(2);
+}
 const execFile = promisify(execFileCb);
 
 function log(event, fields = {}) {
@@ -57,6 +66,7 @@ const plan = {
   mode: dryRun ? 'dry-run' : once ? 'once' : 'ready-window',
   readySeconds,
   judge: {runner: 'openclaw infer model run --local', model: 'commandcode/deepseek/deepseek-v4.1-flash'},
+  contradiction,
   heartbeat: {instance: '30s', reviewer: '30s'},
   notes: [
     'A dispatch is claimed only after the handler is ready to write sources.json.',
@@ -76,6 +86,7 @@ await store.init();
 
 const handler = makePipelineHandler({
   evaluate: makeJudge({run: makeCliRunner({execFile, promisified: true})}),
+  policy: contradiction,
   log: (event) => log('handler', {event}),
 });
 
