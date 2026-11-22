@@ -15,6 +15,7 @@
 import {readFile, writeFile, rename, open, unlink} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {planSourceRequest, sourceRequestFile} from './source-plan.mjs';
+import {deriveVerdict} from './verdict.mjs';
 
 const sha256 = (value) => createHash('sha256').update(value).digest('hex');
 
@@ -173,7 +174,7 @@ export function makePipelineHandler({evaluate, log = () => {}}) {
     const unknown = checks.some((c) => c.status === 'UNVERIFIED');
     const failed = checks.some((c) => c.status === 'FAIL');
     // Verdict is derived from the checks, never taken from the model.
-    const verdict = unknown ? 'INCONCLUSIVE' : failed ? 'REVISE' : 'ACCEPT';
+    const verdict = deriveVerdict(checks);
     const decision = {
       verdict,
       reason: unknown
