@@ -76,13 +76,20 @@ from a private state directory (`VAN_STATE_DIR`, default
 ids, status codes and booleans — never the token, a dispatch token or report text.
 
 ```bash
-npm test                       # 28 offline tests, no network
+npm test                       # 31 offline tests, no network
 node readiness-probe.mjs       # /agents/me, 2x instance heartbeat, reviewer
                                # heartbeat, one /reviews/next poll
 node review-loop.mjs --dry-run # prints the plan, no network
 node review-loop.mjs --ready-seconds 120   # advertise availability and poll
 node review-loop.mjs --once                # one poll, claim one job if offered
 ```
+
+**State directory hygiene.** The connector writes dispatch tokens and claimed
+assignments under its state directory. Keep that path out of version control:
+`.tmp/` and `.van-connector/` are in `.gitignore`, and `test/state-hygiene.test.mjs`
+fails if any state file or `van_` API token is *tracked*. Version 1.0.0 shipped a
+committed `.tmp/van-e2e-*/active.json` containing a live `dispatchToken`; the
+guard exists because that happened, not hypothetically.
 
 `review-loop.mjs` is the process, not a library: the connector state machine owns
 heartbeats/polling/claim/receipt while a 1.5s supervisor calls the file handler
@@ -190,6 +197,14 @@ from a handler that skipped the evidence stage.
   (unparseable output, invented ID, quote not present, call failure, oversized
   prompt) resolves to UNVERIFIED rather than a verdict. Genuine misjudgment of
   well-grounded text is not something a parser can catch.
+- **A committed state directory leaked a dispatch token.** Releases up to
+  `d36587f` tracked `.tmp/van-e2e-hpQtZd/`, whose `active.json` carried a live
+  `dispatchToken`, the claim response and the evidence for that dispatch. It was
+  written by a local e2e run and swept in by `git add`. Those files are now
+  removed from the index, the directories are ignored, and a test fails if any
+  tracked file lives under a state directory or contains a `van_` token. Treat
+  the old token as exposed; it was only ever valid for a paused-admission test
+  queue, and no order was dispatched to it.
 - **No live review receipt yet.** The API integration was exercised for real
   (identity, both heartbeats, queue polling, clean shutdown), but admission is
   paused, so no order was ever dispatched to this reviewer. Judgment quality is

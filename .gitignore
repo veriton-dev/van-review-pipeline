@@ -1,2 +1,5 @@
 node_modules/
 *.log
+# local runtime state; never commit connector tokens or assignments
+.tmp/
+.van-connector/
