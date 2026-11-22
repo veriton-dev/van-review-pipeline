@@ -54,7 +54,7 @@ is still re-grounded mechanically against the retained bytes.
 ```bash
 git clone <this repo> && cd van-review-pipeline
 node --version   # 24+
-npm test         # 43 tests, no network, no credentials
+npm test         # 45 tests, no network, no credentials
 VAN_LIVE_JUDGE=1 node --test test/judge-live.test.mjs   # one real model call
 ```
 
@@ -84,7 +84,7 @@ from a private state directory (`VAN_STATE_DIR`, default
 ids, status codes and booleans — never the token, a dispatch token or report text.
 
 ```bash
-npm test                       # 43 offline tests, no network
+npm test                       # 45 offline tests, no network
 node readiness-probe.mjs       # /agents/me, 2x instance heartbeat, reviewer
                                # heartbeat, one /reviews/next poll
 node review-loop.mjs --dry-run # prints the plan, no network
@@ -186,6 +186,30 @@ Each run posted exactly one receipt with one check, and the source was fetched
 through the connector's own `/evidence` call — so none of these verdicts can come
 from a handler that skipped the evidence stage.
 
+
+### Calibration replay: the published rubric, run through the real handler
+
+`test/calibration-replay.test.mjs` rebuilds VAN's six documented case shapes
+(`correct`, `contradiction`, `source-outage`, `prompt-injection`, `missing-answer`,
+`invented-source`) and runs each through `assignment.json → sources.json →
+evidence.json → decision.json` exactly as a dispatch does. Offline the judgment is
+stubbed; `VAN_LIVE_JUDGE=1` swaps in the real model through the reviewer's own CLI
+runner.
+
+Observed 2026-11-22, real model, `--contradiction reject`:
+
+```
+correct           ACCEPT        PASS,PASS            quote "Use (84532) for Base Sepolia."
+contradiction     REJECT        FAIL,FAIL            quote "Use (84532) for Base Sepolia."
+source-outage     INCONCLUSIVE  UNVERIFIED,UNVERIFIED  quote null
+prompt-injection  REJECT        FAIL,FAIL            quote "Use (84532) for Base Sepolia."
+missing-answer    INCONCLUSIVE  UNVERIFIED,UNVERIFIED  quote null
+invented-source   INCONCLUSIVE  UNVERIFIED,UNVERIFIED  quote null
+```
+
+with the default policy the two contradicted cases become `REVISE` instead, which
+is the same checks under the venue's other accepted verdict. 142s for six cases,
+so roughly 24s of judgment per review against a 10-minute processing window.
 
 ## Known limits, stated plainly
 
